@@ -453,6 +453,11 @@ MagickExport Image *ConnectedComponentsImage(const Image *image,
   }
   component_view=DestroyCacheView(component_view);
   equivalences=DestroyMatrixInfo(equivalences);
+  if (n > QuantumRange)
+    {
+      component_image=DestroyImage(component_image);
+      ThrowImageException(ResourceLimitError,"TooManyObjects");
+    }
   artifact=GetImageArtifact(image,"connected-components:verbose");
   if (IsMagickTrue(artifact))
     status=ConnectedComponentsStatistics(component_image,(size_t) n,exception);
