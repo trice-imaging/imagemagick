@@ -4175,7 +4175,7 @@ static Image *ReadOneJNGImage(MngInfo *mng_info,
         type[0],type[1],type[2],type[3],(double) length);
 
     if (length > PNG_UINT_31_MAX || count == 0)
-      ThrowReaderException(CorruptImageError,"CorruptImage");
+        ThrowReaderException(CorruptImageError,"CorruptImage");
 
     p=NULL;
     chunk=(unsigned char *) NULL;
@@ -4735,8 +4735,7 @@ static Image *ReadOneJNGImage(MngInfo *mng_info,
 static Image *ReadJNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
 {
   Image
-    *image,
-    *previous;
+    *image;
 
   MagickBooleanType
     have_mng_structure,
@@ -4792,18 +4791,11 @@ static Image *ReadJNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
   have_mng_structure=MagickTrue;
 
   mng_info->image=image;
-  previous=image;
   image=ReadOneJNGImage(mng_info,image_info,exception);
   MngInfoFreeStruct(mng_info,&have_mng_structure);
 
   if (image == (Image *) NULL)
     {
-      if (IsImageObject(previous) != MagickFalse)
-        {
-          (void) CloseBlob(previous);
-          (void) DestroyImageList(previous);
-        }
-
       if (logging != MagickFalse)
         (void) LogMagickEvent(CoderEvent,GetMagickModule(),
           "exit ReadJNGImage() with error");
