@@ -199,7 +199,7 @@ static unsigned int PNMInteger(Image *image,const unsigned int base)
       return(0);
     if (c == (int) '#')
       PNMComment(image);
-  } while (isdigit(c) == MagickFalse);
+  } while (isdigit(c) == 0);
   if (base == 2)
     return((unsigned int) (c-(int) '0'));
   /*
@@ -211,13 +211,11 @@ static unsigned int PNMInteger(Image *image,const unsigned int base)
     if (value > (unsigned int) (INT_MAX/10))
       break;
     value*=10;
-    if (value > (INT_MAX-c))
+    if (value > (INT_MAX-(c-(int) '0')))
       break;
     value+=c-(int) '0';
     c=ReadBlobByte(image);
-    if (c == EOF)
-      return(value);
-  } while (isdigit(c) != MagickFalse);
+  } while (isdigit(c) != 0);
   return(value);
 }
 
