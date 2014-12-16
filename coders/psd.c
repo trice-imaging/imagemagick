@@ -521,7 +521,7 @@ static const char *ModeToString(PSDImageType type)
   }
 }
 
-static MagickBooleanType ParseImageResourceBlocks(Image *image,
+static void ParseImageResourceBlocks(Image *image,
   const unsigned char *blocks,size_t length,
   MagickBooleanType *has_merged_image)
 {
@@ -540,7 +540,7 @@ static MagickBooleanType ParseImageResourceBlocks(Image *image,
     short_sans;
 
   if (length < 16)
-    return(MagickFalse);
+    return;
   profile=BlobToStringInfo((const void *) NULL,length);
   SetStringInfoDatum(profile,blocks);
   (void) SetImageProfile(image,"8bim",profile);
@@ -553,6 +553,8 @@ static MagickBooleanType ParseImageResourceBlocks(Image *image,
     p=PushShortPixel(MSBEndian,p,&id);
     p=PushShortPixel(MSBEndian,p,&short_sans);
     p=PushLongPixel(MSBEndian,p,&count);
+    if (p+count > blocks+length)
+      return;
     switch (id)
     {
       case 0x03ed:
@@ -601,7 +603,7 @@ static MagickBooleanType ParseImageResourceBlocks(Image *image,
     if ((count & 0x01) != 0)
       p++;
   }
-  return(MagickTrue);
+  return;
 }
 
 static CompositeOperator PSDBlendModeToCompositeOperator(const char *mode)
@@ -1752,7 +1754,7 @@ static Image *ReadPSDImage(const ImageInfo *image_info,
         (void) LogMagickEvent(CoderEvent,GetMagickModule(),
           "  reading image resource blocks - %.20g bytes",(double)
           ((MagickOffsetType) length));
-      blocks=(unsigned char *) AcquireQuantumMemory((size_t) length+16,
+      blocks=(unsigned char *) AcquireQuantumMemory((size_t) length,
         sizeof(*blocks));
       if (blocks == (unsigned char *) NULL)
         ThrowReaderException(ResourceLimitError,"MemoryAllocationFailed");
@@ -1763,8 +1765,7 @@ static Image *ReadPSDImage(const ImageInfo *image_info,
           blocks=(unsigned char *) RelinquishMagickMemory(blocks);
           ThrowReaderException(CorruptImageError,"ImproperImageHeader");
         }
-      (void) ParseImageResourceBlocks(image,blocks,(size_t) length,
-        &has_merged_image);
+      ParseImageResourceBlocks(image,blocks,(size_t) length,&has_merged_image);
       blocks=(unsigned char *) RelinquishMagickMemory(blocks);
     }
   /*
