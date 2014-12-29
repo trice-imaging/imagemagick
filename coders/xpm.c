@@ -158,9 +158,10 @@ static size_t CopyXPMColor(char *destination,const char *source,size_t length)
     *p;
 
   p=source;
-  while (--length && (*p != '\0'))
+  while (length-- && (*p != '\0'))
     *destination++=(*p++);
-  *destination='\0';
+  if (length != 0)
+    *destination='\0';
   return((size_t) (p-source));
 }
 
@@ -385,7 +386,7 @@ static Image *ReadXPMImage(const ImageInfo *image_info,ExceptionInfo *exception)
 
     p=next;
     next=NextXPMLine(p);
-    (void) CopyXPMColor(key,p,MagickMin((size_t) width,MaxTextExtent));
+    (void) CopyXPMColor(key,p,MagickMin((size_t) width,MaxTextExtent-1));
     status=AddValueToSplayTree(xpm_colors,ConstantString(key),(void *) j);
     /*
       Parse color.
@@ -400,7 +401,7 @@ static Image *ReadXPMImage(const ImageInfo *image_info,ExceptionInfo *exception)
           break;
         if (next != (char *) NULL)
           (void) CopyXPMColor(target,q,MagickMin((size_t) (next-q),
-            MaxTextExtent));
+            MaxTextExtent-1));
         else
           (void) CopyMagickString(target,q,MaxTextExtent);
         q=ParseXPMColor(target,MagickFalse);
@@ -443,7 +444,7 @@ static Image *ReadXPMImage(const ImageInfo *image_info,ExceptionInfo *exception)
         indexes=GetAuthenticIndexQueue(image);
         for (x=0; x < (ssize_t) image->columns; x++)
         {
-          p+=CopyXPMColor(key,p,MagickMin(width,MaxTextExtent));
+          p+=CopyXPMColor(key,p,MagickMin(width,MaxTextExtent-1));
           j=(ssize_t) GetValueFromSplayTree(xpm_colors,key);
           if (image->storage_class == PseudoClass)
             SetPixelIndex(indexes+x,j);
