@@ -1,0 +1,56 @@
+From f4ece8c7c462c5449138f39401f66318b9ab0430 Mon Sep 17 00:00:00 2001
+From: glennrp <glennrp@aa41f4f7-0bf4-0310-aa73-e5a19afd5a74>
+Date: Thu, 20 Nov 2014 18:27:10 +0000
+Subject: [PATCH] Don't try to handle a "previous" image in the JNG decoder.
+
+git-svn-id: https://subversion.imagemagick.org/subversion/ImageMagick/branches/ImageMagick-6@17078 aa41f4f7-0bf4-0310-aa73-e5a19afd5a74
+http://trac.imagemagick.org/changeset/17078
+---
+ coders/png.c | 12 ++----------
+ 1 file changed, 2 insertions(+), 10 deletions(-)
+
+diff --git a/coders/png.c b/coders/png.c
+index 0057df2..263d52b 100644
+--- a/coders/png.c
++++ b/coders/png.c
+@@ -4175,7 +4175,7 @@ static Image *ReadOneJNGImage(MngInfo *mng_info,
+         type[0],type[1],type[2],type[3],(double) length);
+ 
+     if (length > PNG_UINT_31_MAX || count == 0)
+-      ThrowReaderException(CorruptImageError,"CorruptImage");
++        ThrowReaderException(CorruptImageError,"CorruptImage");
+ 
+     p=NULL;
+     chunk=(unsigned char *) NULL;
+@@ -4735,8 +4735,7 @@ static Image *ReadOneJNGImage(MngInfo *mng_info,
+ static Image *ReadJNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
+ {
+   Image
+-    *image,
+-    *previous;
++    *image;
+ 
+   MagickBooleanType
+     have_mng_structure,
+@@ -4792,18 +4791,11 @@ static Image *ReadJNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
+   have_mng_structure=MagickTrue;
+ 
+   mng_info->image=image;
+-  previous=image;
+   image=ReadOneJNGImage(mng_info,image_info,exception);
+   MngInfoFreeStruct(mng_info,&have_mng_structure);
+ 
+   if (image == (Image *) NULL)
+     {
+-      if (IsImageObject(previous) != MagickFalse)
+-        {
+-          (void) CloseBlob(previous);
+-          (void) DestroyImageList(previous);
+-        }
+-
+       if (logging != MagickFalse)
+         (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+           "exit ReadJNGImage() with error");
+-- 
+2.1.4
+

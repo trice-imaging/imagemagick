@@ -1,0 +1,64 @@
+From c504b8e1a1ca6f158f2d08bd33c62ce4865497ee Mon Sep 17 00:00:00 2001
+From: cristy <cristy@aa41f4f7-0bf4-0310-aa73-e5a19afd5a74>
+Date: Tue, 28 Oct 2014 10:15:41 +0000
+Subject: [PATCH] Avoid an infinite loop
+
+Avoid an infinite loop if too many object in vision.c
+
+This could lead to a DOS.
+
+git-svn-id: https://subversion.imagemagick.org/subversion/ImageMagick/branches/ImageMagick-6@16864 aa41f4f7-0bf4-0310-aa73-e5a19afd5a74
+origin: http://trac.imagemagick.org/changeset/16864
+---
+ config/english.xml  | 3 +++
+ config/francais.xml | 3 +++
+ magick/vision.c     | 5 +++++
+ 3 files changed, 11 insertions(+)
+
+diff --git a/config/english.xml b/config/english.xml
+index c26749c..6c864f2 100644
+--- a/config/english.xml
++++ b/config/english.xml
+@@ -948,6 +948,9 @@
+           <message name="MemoryAllocationFailed">
+             memory allocation failed
+           </message>
++          <message name="TooManyObjects">
++            too many objects
++          </message>
+           <message name="UnableToAcquireString">
+             unable to acquire string
+           </message>
+diff --git a/config/francais.xml b/config/francais.xml
+index 6c217d6..b421ecb 100644
+--- a/config/francais.xml
++++ b/config/francais.xml
+@@ -936,6 +936,9 @@
+           <message name="MemoryAllocationFailed">
+             Échec allocation mémoire
+           </message>
++          <message name="TooManyObjects">
++            too many objects
++          </message>
+           <message name="UnableToAcquireString">
+             échec acquisition de la chaine
+           </message>
+diff --git a/magick/vision.c b/magick/vision.c
+index 4a42f5b..cdca011 100644
+--- a/magick/vision.c
++++ b/magick/vision.c
+@@ -453,6 +453,11 @@ MagickExport Image *ConnectedComponentsImage(const Image *image,
+   }
+   component_view=DestroyCacheView(component_view);
+   equivalences=DestroyMatrixInfo(equivalences);
++  if (n > QuantumRange)
++    {
++      component_image=DestroyImage(component_image);
++      ThrowImageException(ResourceLimitError,"TooManyObjects");
++    }
+   artifact=GetImageArtifact(image,"connected-components:verbose");
+   if (IsMagickTrue(artifact))
+     status=ConnectedComponentsStatistics(component_image,(size_t) n,exception);
+-- 
+2.1.4
+

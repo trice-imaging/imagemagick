@@ -1,0 +1,48 @@
+From 36ed9419a68cb1356b1843b48cc12788179cdaee Mon Sep 17 00:00:00 2001
+From: cristy <cristy@aa41f4f7-0bf4-0310-aa73-e5a19afd5a74>
+Date: Fri, 19 Dec 2014 00:26:33 +0000
+Subject: [PATCH] Fix another out of bound problem in rle file
+
+git-svn-id: https://subversion.imagemagick.org/subversion/ImageMagick/branches/ImageMagick-6@17336 aa41f4f7-0bf4-0310-aa73-e5a19afd5a74
+origin:  http://trac.imagemagick.org/changeset/17336
+---
+ coders/rle.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/coders/rle.c b/coders/rle.c
+index fcc718b..4cc6a96 100644
+--- a/coders/rle.c
++++ b/coders/rle.c
+@@ -422,6 +422,9 @@ static Image *ReadRLEImage(const ImageInfo *image_info,ExceptionInfo *exception)
+     } while (((opcode & 0x3f) != EOFOp) && (opcode != EOF));
+     if (number_colormaps != 0)
+       {
++        IndexPacket
++          index;
++
+         MagickStatusType
+           mask;
+ 
+@@ -433,7 +436,8 @@ static Image *ReadRLEImage(const ImageInfo *image_info,ExceptionInfo *exception)
+         if (number_colormaps == 1)
+           for (i=0; i < (ssize_t) number_pixels; i++)
+           {
+-            *p=colormap[*p & mask];
++            index=ConstrainColormapIndex(image,*p & mask);
++            *p=colormap[index];
+             p++;
+           }
+         else
+@@ -441,7 +445,8 @@ static Image *ReadRLEImage(const ImageInfo *image_info,ExceptionInfo *exception)
+             for (i=0; i < (ssize_t) number_pixels; i++)
+               for (x=0; x < (ssize_t) number_planes; x++)
+               {
+-                *p=colormap[x*map_length+(*p & mask)];
++                index=ConstrainColormapIndex(image,x*map_length+(*p & mask));
++                *p=colormap[index];
+                 p++;
+               }
+       }
+-- 
+2.1.4
+

@@ -1,0 +1,62 @@
+From 89ba2d70d6f1d2fe7ecfb5ec87a3ee5dc35cbe71 Mon Sep 17 00:00:00 2001
+From: cristy <cristy@aa41f4f7-0bf4-0310-aa73-e5a19afd5a74>
+Date: Fri, 5 Dec 2014 11:12:58 +0000
+Subject: [PATCH] Fix ImageMagick crashes while read EXIF from TIFF
+
+git-svn-id: https://subversion.imagemagick.org/subversion/ImageMagick/branches/ImageMagick-6@17157 aa41f4f7-0bf4-0310-aa73-e5a19afd5a74
+origin:  http://trac.imagemagick.org/changeset/17157
+---
+ coders/tiff.c | 28 ++++++++++++++++------------
+ 1 file changed, 16 insertions(+), 12 deletions(-)
+
+diff --git a/coders/tiff.c b/coders/tiff.c
+index 67b57b3..1fe12fe 100644
+--- a/coders/tiff.c
++++ b/coders/tiff.c
+@@ -713,7 +713,16 @@ static void TIFFGetEXIFProperties(TIFF *tiff,Image *image)
+       }
+       case TIFF_SHORT:
+       {
+-        if (exif_info[i].variable_length != 0)
++        if (exif_info[i].variable_length == 0)
++          {
++            uint16
++              shorty;
++
++            shorty=0;
++            if (TIFFGetField(tiff,exif_info[i].tag,&shorty,&sans,&sans) == 1)
++              (void) FormatLocaleString(value,MaxTextExtent,"%d",shorty);
++          }
++        else
+           {
+             int
+               tiff_status;
+@@ -721,19 +730,14 @@ static void TIFFGetEXIFProperties(TIFF *tiff,Image *image)
+             uint16
+               *shorty;
+ 
+-            tiff_status=TIFFGetField(tiff,exif_info[i].tag,&sans,&shorty,&sans,
+-              &sans);
+-            if (tiff_status == 1)
+-              (void) FormatLocaleString(value,MaxTextExtent,"%d",shorty[0]);
+-          }
+-        else
+-          {
+             uint16
+-              shorty;
++              shorty_num;
+ 
+-            shorty=0;
+-            if (TIFFGetField(tiff,exif_info[i].tag,&shorty,&sans,&sans) == 1)
+-              (void) FormatLocaleString(value,MaxTextExtent,"%d",shorty);
++            tiff_status=TIFFGetField(tiff,exif_info[i].tag,&shorty_num,&shorty,
++              &sans,&sans);
++            if (tiff_status == 1)
++              (void) FormatLocaleString(value,MaxTextExtent,"%d",
++                shorty_num != 0 ? shorty[0] : 0);
+           }
+         break;
+       }
+-- 
+2.1.4
+

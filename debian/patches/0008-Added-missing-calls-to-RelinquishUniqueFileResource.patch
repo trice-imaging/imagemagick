@@ -1,0 +1,175 @@
+From 9fdb9bf2832a1aa2c79002ae5c2ba1e8018e4ff1 Mon Sep 17 00:00:00 2001
+From: dirk <dirk@aa41f4f7-0bf4-0310-aa73-e5a19afd5a74>
+Date: Thu, 6 Nov 2014 21:09:54 +0000
+Subject: [PATCH] Added missing calls to RelinquishUniqueFileResource.
+
+Avoid to leak fd in case of error.
+
+git-svn-id: https://subversion.imagemagick.org/subversion/ImageMagick/branches/ImageMagick-6@16971 aa41f4f7-0bf4-0310-aa73-e5a19afd5a74
+origin: http://trac.imagemagick.org/changeset/16971
+---
+ coders/dcm.c  | 28 +++++++++++++---------------
+ coders/dot.c  |  5 ++++-
+ coders/exr.c  | 10 +++++++++-
+ coders/pict.c |  2 ++
+ coders/pwp.c  |  6 +++++-
+ 5 files changed, 33 insertions(+), 18 deletions(-)
+
+diff --git a/coders/dcm.c b/coders/dcm.c
+index 88892ee..b8fe681 100644
+--- a/coders/dcm.c
++++ b/coders/dcm.c
+@@ -3563,34 +3563,32 @@ static Image *ReadDCMImage(const ImageInfo *image_info,ExceptionInfo *exception)
+         unsigned int
+           tag;
+ 
++        tag=(ReadBlobLSBShort(image) << 16) | ReadBlobLSBShort(image);
++        length=(size_t) ReadBlobLSBLong(image);
++        if (tag == 0xFFFEE0DD)
++          break; /* sequence delimiter tag */
++        if (tag != 0xFFFEE000)
++          ThrowReaderException(CorruptImageError,"ImproperImageHeader");
+         file=(FILE *) NULL;
+         unique_file=AcquireUniqueFileResource(filename);
+         if (unique_file != -1)
+           file=fdopen(unique_file,"wb");
+-        if ((unique_file == -1) || (file == (FILE *) NULL))
++        if (file == (FILE *) NULL)
+           {
++            (void) RelinquishUniqueFileResource(filename);
+             ThrowFileException(exception,FileOpenError,
+               "UnableToCreateTemporaryFile",filename);
+             break;
+           }
+-        tag=(ReadBlobLSBShort(image) << 16) | ReadBlobLSBShort(image);
+-        length=(size_t) ReadBlobLSBLong(image);
+-        if (tag == 0xFFFEE0DD)
+-          {
+-            (void) fclose(file);
+-            break; /* sequence delimiter tag */
+-          }
+-        if (tag != 0xFFFEE000)
+-          {
+-            (void) fclose(file);
+-            ThrowReaderException(CorruptImageError,"ImproperImageHeader");
+-          }
+         for ( ; length != 0; length--)
+         {
+           c=ReadBlobByte(image);
+           if (c == EOF)
+-            ThrowFileException(exception,CorruptImageError,
+-              "UnexpectedEndOfFile",image->filename);
++            {
++              ThrowFileException(exception,CorruptImageError,
++                "UnexpectedEndOfFile",image->filename);
++              break;
++            }
+           (void) fputc(c,file);
+         }
+         (void) fclose(file);
+diff --git a/coders/dot.c b/coders/dot.c
+index e60be46..32acb9e 100644
+--- a/coders/dot.c
++++ b/coders/dot.c
+@@ -142,7 +142,10 @@ static Image *ReadDOTImage(const ImageInfo *image_info,ExceptionInfo *exception)
+   graph=agread(GetBlobFileHandle(image),(Agdisc_t *) NULL);
+ #endif
+   if (graph == (graph_t *) NULL)
+-    return ((Image *) NULL);
++    {
++      (void) RelinquishUniqueFileResource(read_info->filename);
++      return ((Image *) NULL);
++    }
+   option=GetImageOption(image_info,"dot:layout-engine");
+   if (option == (const char *) NULL)
+     gvLayout(graphic_context,graph,(char *) "dot");
+diff --git a/coders/exr.c b/coders/exr.c
+index 11407f2..b12f956 100644
+--- a/coders/exr.c
++++ b/coders/exr.c
+@@ -192,6 +192,8 @@ static Image *ReadEXRImage(const ImageInfo *image_info,ExceptionInfo *exception)
+     {
+       ThrowFileException(exception,BlobError,"UnableToOpenBlob",
+         ImfErrorMessage());
++      if (LocaleCompare(image_info->filename,read_info->filename) != 0)
++        (void) RelinquishUniqueFileResource(read_info->filename);
+       read_info=DestroyImageInfo(read_info);
+       return((Image *) NULL);
+     }
+@@ -214,6 +216,9 @@ static Image *ReadEXRImage(const ImageInfo *image_info,ExceptionInfo *exception)
+   if (scanline == (ImfRgba *) NULL)
+     {
+       (void) ImfCloseInputFile(file);
++      if (LocaleCompare(image_info->filename,read_info->filename) != 0)
++        (void) RelinquishUniqueFileResource(read_info->filename);
++      read_info=DestroyImageInfo(read_info);
+       ThrowReaderException(ResourceLimitError,"MemoryAllocationFailed");
+     }
+   for (y=0; y < (ssize_t) image->rows; y++)
+@@ -417,15 +422,18 @@ static MagickBooleanType WriteEXRImage(const ImageInfo *image_info,Image *image)
+   ImfDeleteHeader(hdr_info);
+   if (file == (ImfOutputFile *) NULL)
+     {
++      (void) RelinquishUniqueFileResource(write_info->filename);
++      write_info=DestroyImageInfo(write_info);
+       ThrowFileException(&image->exception,BlobError,"UnableToOpenBlob",
+         ImfErrorMessage());
+-      write_info=DestroyImageInfo(write_info);
+       return(MagickFalse);
+     }
+   scanline=(ImfRgba *) AcquireQuantumMemory(image->columns,sizeof(*scanline));
+   if (scanline == (ImfRgba *) NULL)
+     {
+       (void) ImfCloseOutputFile(file);
++      (void) RelinquishUniqueFileResource(write_info->filename);
++      write_info=DestroyImageInfo(write_info);
+       ThrowWriterException(ResourceLimitError,"MemoryAllocationFailed");
+     }
+   ResetMagickMemory(scanline,0,image->columns*sizeof(*scanline));
+diff --git a/coders/pict.c b/coders/pict.c
+index f47e06c..35fb56e 100644
+--- a/coders/pict.c
++++ b/coders/pict.c
+@@ -1388,6 +1388,7 @@ static Image *ReadPICTImage(const ImageInfo *image_info,
+           {
+             if (file != (FILE *) NULL)
+               (void) fclose(file);
++            (void) RelinquishUniqueFileResource(read_info->filename);
+             (void) CopyMagickString(image->filename,read_info->filename,
+               MaxTextExtent);
+             ThrowFileException(exception,FileOpenError,
+@@ -1401,6 +1402,7 @@ static Image *ReadPICTImage(const ImageInfo *image_info,
+         if (ReadRectangle(image,&frame) == MagickFalse)
+           {
+             (void) fclose(file);
++            (void) RelinquishUniqueFileResource(read_info->filename);
+             ThrowReaderException(CorruptImageError,"ImproperImageHeader");
+           }
+         for (i=0; i < 122; i++)
+diff --git a/coders/pwp.c b/coders/pwp.c
+index a7dd842..991d4bb 100644
+--- a/coders/pwp.c
++++ b/coders/pwp.c
+@@ -192,7 +192,10 @@ static Image *ReadPWPImage(const ImageInfo *image_info,ExceptionInfo *exception)
+     if (c == EOF)
+       break;
+     if (LocaleNCompare((char *) (magick+12),"SFW94A",6) != 0)
+-      ThrowReaderException(CorruptImageError,"ImproperImageHeader");
++      {
++        (void) RelinquishUniqueFileResource(read_info->filename);
++        ThrowReaderException(CorruptImageError,"ImproperImageHeader");
++      }
+     /*
+       Dump SFW image to a temporary file.
+     */
+@@ -201,6 +204,7 @@ static Image *ReadPWPImage(const ImageInfo *image_info,ExceptionInfo *exception)
+       file=fdopen(unique_file,"wb");
+     if ((unique_file == -1) || (file == (FILE *) NULL))
+       {
++        (void) RelinquishUniqueFileResource(read_info->filename);
+         ThrowFileException(exception,FileOpenError,"UnableToWriteFile",
+           image->filename);
+         image=DestroyImageList(image);
+-- 
+2.1.4
+

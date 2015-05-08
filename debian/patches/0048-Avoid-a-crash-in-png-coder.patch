@@ -1,0 +1,70 @@
+From 6330ab1048b62ab34e957447d81e35e1dde60d2e Mon Sep 17 00:00:00 2001
+From: cristy <cristy@aa41f4f7-0bf4-0310-aa73-e5a19afd5a74>
+Date: Sun, 14 Dec 2014 17:06:28 +0000
+Subject: [PATCH] Avoid a crash in png coder
+
+Move some code earlier in order to avoid non initialised pointer.
+
+git-svn-id: https://subversion.imagemagick.org/subversion/ImageMagick/branches/ImageMagick-6@17209 aa41f4f7-0bf4-0310-aa73-e5a19afd5a74
+origin:  http://trac.imagemagick.org/changeset/17209
+---
+ coders/png.c | 22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
+
+diff --git a/coders/png.c b/coders/png.c
+index 263d52b..ed6d613 100644
+--- a/coders/png.c
++++ b/coders/png.c
+@@ -3102,6 +3102,16 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
+ 
+   if (image->storage_class == DirectClass)
+     {
++      QuantumInfo
++        *quantum_info;
++
++      quantum_info=AcquireQuantumInfo(image_info,image);
++
++      if (quantum_info == (QuantumInfo *) NULL)
++        png_error(ping,"Failed to allocate quantum_info");
++
++      (void) SetQuantumEndian(image,quantum_info,MSBEndian);
++
+       for (pass=0; pass < num_passes; pass++)
+       {
+         /*
+@@ -3133,16 +3143,6 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
+ 
+           else
+           {
+-            QuantumInfo
+-              *quantum_info;
+-
+-            quantum_info=AcquireQuantumInfo(image_info,image);
+-
+-            if (quantum_info == (QuantumInfo *) NULL)
+-              png_error(ping,"Failed to allocate quantum_info");
+-
+-            (void) SetQuantumEndian(image,quantum_info,MSBEndian);
+-
+             if ((int) ping_color_type == PNG_COLOR_TYPE_GRAY)
+               (void) ImportQuantumPixels(image,(CacheView *) NULL,quantum_info,
+                 GrayQuantum,ping_pixels+row_offset,exception);
+@@ -3163,7 +3163,6 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
+               (void) ImportQuantumPixels(image,(CacheView *) NULL,quantum_info,
+                 RGBQuantum,ping_pixels+row_offset,exception);
+ 
+-            quantum_info=DestroyQuantumInfo(quantum_info);
+           }
+ 
+           if (found_transparent_pixel == MagickFalse)
+@@ -3224,6 +3223,7 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
+               break;
+           }
+       }
++      quantum_info=DestroyQuantumInfo(quantum_info);
+     }
+ 
+   else /* image->storage_class != DirectClass */
+-- 
+2.1.4
+

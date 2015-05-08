@@ -1,0 +1,170 @@
+From 69490f5cffbda612e15a2985699455bb0b45e276 Mon Sep 17 00:00:00 2001
+From: cristy <cristy@aa41f4f7-0bf4-0310-aa73-e5a19afd5a74>
+Date: Tue, 2 Dec 2014 02:11:59 +0000
+Subject: [PATCH] Fix handling of corrupted of psd, sun and xpm file
+
+Fix a heap overflow in psd file.
+
+Bail early in xpm file.
+
+Fix error handling in sun file.
+
+git-svn-id: https://subversion.imagemagick.org/subversion/ImageMagick/branches/ImageMagick-6@17149 aa41f4f7-0bf4-0310-aa73-e5a19afd5a74
+origin: http://trac.imagemagick.org/changeset/17149
+---
+ coders/psd.c        |  4 ++--
+ coders/sun.c        |  4 ++--
+ coders/xpm.c        | 33 +++++++++++++++------------------
+ config/english.xml  |  6 +++---
+ config/francais.xml |  6 +++---
+ 5 files changed, 25 insertions(+), 28 deletions(-)
+
+diff --git a/coders/psd.c b/coders/psd.c
+index 985e32d..d818fe3 100644
+--- a/coders/psd.c
++++ b/coders/psd.c
+@@ -799,7 +799,7 @@ static MagickStatusType ReadPSDChannelRaw(Image *image,const size_t channels,
+        "      layer data is RAW");
+ 
+   row_size=GetPSDRowSize(image);
+-  pixels=(unsigned char *) AcquireQuantumMemory(row_size,sizeof(*pixels));
++  pixels=(unsigned char *) AcquireQuantumMemory(8*row_size,sizeof(*pixels));
+   if (pixels == (unsigned char *) NULL)
+     ThrowBinaryException(ResourceLimitError,"MemoryAllocationFailed",
+       image->filename);
+@@ -868,7 +868,7 @@ static MagickStatusType ReadPSDChannelRLE(Image *image,const PSDInfo *psd_info,
+        "      layer data is RLE compressed");
+ 
+   row_size=GetPSDRowSize(image);
+-  pixels=(unsigned char *) AcquireQuantumMemory(row_size,sizeof(*pixels));
++  pixels=(unsigned char *) AcquireQuantumMemory(8*row_size,sizeof(*pixels));
+   if (pixels == (unsigned char *) NULL)
+     ThrowBinaryException(ResourceLimitError,"MemoryAllocationFailed",
+       image->filename);
+diff --git a/coders/sun.c b/coders/sun.c
+index 02251b3..9ab412b 100644
+--- a/coders/sun.c
++++ b/coders/sun.c
+@@ -308,9 +308,9 @@ static Image *ReadSUNImage(const ImageInfo *image_info,ExceptionInfo *exception)
+     sun_info.maplength=ReadBlobMSBLong(image);
+     if ((sun_info.type != RT_STANDARD) && (sun_info.type != RT_ENCODED) &&
+         (sun_info.type != RT_FORMAT_RGB))
+-      ThrowReaderException(CoderError,"ImproperImageHeader");
++      ThrowReaderException(CorruptImageError,"ImproperImageHeader");
+     if ((sun_info.maptype == RMT_NONE) && (sun_info.maplength != 0))
+-      ThrowReaderException(CoderError,"ImproperImageHeader");
++      ThrowReaderException(CorruptImageError,"ImproperImageHeader");
+     if ((sun_info.depth == 0) || (sun_info.depth > 32))
+       ThrowReaderException(CorruptImageError,"ImproperImageHeader");
+     if ((sun_info.maptype != RMT_NONE) && (sun_info.maptype != RMT_EQUAL_RGB) &&
+diff --git a/coders/xpm.c b/coders/xpm.c
+index 98e95ce..0faaf2d 100644
+--- a/coders/xpm.c
++++ b/coders/xpm.c
+@@ -166,7 +166,7 @@ static size_t CopyXPMColor(char *destination,const char *source,size_t length)
+ 
+ static char *NextXPMLine(char *p)
+ {
+-  assert(p != (char*)NULL);
++  assert(p != (char *)NULL);
+   p=strchr(p,'\n');
+   if (p != (char *) NULL)
+     p++;
+@@ -223,24 +223,21 @@ static char *ParseXPMColor(char *color,MagickBooleanType search_start)
+       }
+       return((char *) NULL);
+     }
+-  else
++  for (p=color+1; *p != '\0'; p++)
++  {
++    if (*p == '\n')
++      break;
++    if (isspace((int) ((unsigned char) (*(p-1)))) == 0)
++      continue;
++    if (isspace((int) ((unsigned char) (*p))) != 0)
++      continue;
++    for (i=0; i < NumberTargets; i++)
+     {
+-      for (p=color+1; *p != '\0'; p++)
+-      {
+-        if (*p == '\n')
+-          break;
+-        if (isspace((int) ((unsigned char) (*(p-1)))) == 0)
+-          continue;
+-        if (isspace((int) ((unsigned char) (*p))) != 0)
+-          continue;
+-        for (i=0; i < NumberTargets; i++)
+-        {
+-          if (*p == *targets[i] && *(p+1) == *(targets[i]+1))
+-            return(p);
+-        }
+-      }
+-      return(p);
++      if ((*p == *targets[i]) && (*(p+1) == *(targets[i]+1)))
++        return(p);
+     }
++  }
++  return(p);
+ }
+ 
+ static Image *ReadXPMImage(const ImageInfo *image_info,ExceptionInfo *exception)
+@@ -381,7 +378,7 @@ static Image *ReadXPMImage(const ImageInfo *image_info,ExceptionInfo *exception)
+   */
+   image->depth=1;
+   next=NextXPMLine(xpm_buffer);
+-  for (j=0; (j < (ssize_t) image->colors) && (next != (char*) NULL); j++)
++  for (j=0; (j < (ssize_t) image->colors) && (next != (char *) NULL); j++)
+   {
+     MagickPixelPacket
+       pixel;
+diff --git a/config/english.xml b/config/english.xml
+index 6c864f2..9ef56c2 100644
+--- a/config/english.xml
++++ b/config/english.xml
+@@ -122,6 +122,9 @@
+         <message name="ImageIsNotTiled">
+           image is not tiled
+         </message>
++        <message name="ImproperImageHeader">
++          improper image header
++        </message>
+         <message name="IrregularChannelGeometryNotSupported">
+           irregular channel geometry not supported
+         </message>
+@@ -255,9 +258,6 @@
+           <message name="ImageTypeNotSupported">
+             image type not supported
+           </message>
+-          <message name="ImproperImageHeader">
+-            improper image header
+-          </message>
+           <message name="InsufficientImageDataInFile">
+             insufficient image data in file
+           </message>
+diff --git a/config/francais.xml b/config/francais.xml
+index b421ecb..1a270f7 100644
+--- a/config/francais.xml
++++ b/config/francais.xml
+@@ -116,6 +116,9 @@
+         <message name="ImageDoesNotHaveAAlphaChannel">
+           l'image n'a pas de canal de transparence
+         </message>
++        <message name="ImproperImageHeader">
++          En-tête d'image incorrect
++        </message>
+         <message name="ImageIsNotTiled">
+           l'image n'a pas tiled
+         </message>
+@@ -255,9 +258,6 @@
+           <message name="ImageTypeNotSupported">
+             type d'image non supporté
+           </message>
+-          <message name="ImproperImageHeader">
+-            En-tête d'image incorrect
+-          </message>
+           <message name="InsufficientImageDataInFile">
+             Pas assez de données d'image dans le fichier
+           </message>
+-- 
+2.1.4
+

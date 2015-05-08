@@ -1,0 +1,54 @@
+From 7a7119c6fe19324ee17b8f756dae60c16e470ab2 Mon Sep 17 00:00:00 2001
+From: cristy <cristy@aa41f4f7-0bf4-0310-aa73-e5a19afd5a74>
+Date: Sat, 13 Dec 2014 22:14:04 +0000
+Subject: [PATCH] Additional PNM sanity checks
+
+bug: http://www.imagemagick.org/discourse-server/viewtopic.php?f=3&t=26682
+git-svn-id: https://subversion.imagemagick.org/subversion/ImageMagick/branches/ImageMagick-6@17200 aa41f4f7-0bf4-0310-aa73-e5a19afd5a74
+origin:  http://trac.imagemagick.org/changeset/17200 and http://trac.imagemagick.org/changeset/17202 and http://trac.imagemagick.org/changeset/17237
+---
+ coders/pnm.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/coders/pnm.c b/coders/pnm.c
+index 3fe0dec..505a37f 100644
+--- a/coders/pnm.c
++++ b/coders/pnm.c
+@@ -181,12 +181,12 @@ static void PNMComment(Image *image)
+   comment=DestroyString(comment);
+ }
+ 
+-static size_t PNMInteger(Image *image,const unsigned int base)
++static unsigned int PNMInteger(Image *image,const unsigned int base)
+ {
+   int
+     c;
+ 
+-  size_t
++  unsigned int
+     value;
+ 
+   /*
+@@ -201,14 +201,18 @@ static size_t PNMInteger(Image *image,const unsigned int base)
+       PNMComment(image);
+   } while (isdigit(c) == MagickFalse);
+   if (base == 2)
+-    return((size_t) (c-(int) '0'));
++    return((unsigned int) (c-(int) '0'));
+   /*
+     Evaluate number.
+   */
+   value=0;
+   do
+   {
++    if (value > (unsigned int) (INT_MAX/10))
++      break;
+     value*=10;
++    if (value > (INT_MAX-c))
++      break;
+     value+=c-(int) '0';
+     c=ReadBlobByte(image);
+     if (c == EOF)
+-- 
+2.1.4
+

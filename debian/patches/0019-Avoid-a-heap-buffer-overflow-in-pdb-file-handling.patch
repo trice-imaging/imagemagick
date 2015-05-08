@@ -1,0 +1,49 @@
+From e24de96ab25b396ae914a7640ff4d61e58c40cf0 Mon Sep 17 00:00:00 2001
+From: cristy <cristy@aa41f4f7-0bf4-0310-aa73-e5a19afd5a74>
+Date: Sat, 29 Nov 2014 17:16:15 +0000
+Subject: [PATCH] Avoid a heap buffer overflow in pdb file handling
+
+git-svn-id: https://subversion.imagemagick.org/subversion/ImageMagick/branches/ImageMagick-6@17132 aa41f4f7-0bf4-0310-aa73-e5a19afd5a74
+origin: http://trac.imagemagick.org/changeset/17132
+---
+ coders/pdb.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/coders/pdb.c b/coders/pdb.c
+index 117538d..af6bfec 100644
+--- a/coders/pdb.c
++++ b/coders/pdb.c
+@@ -402,12 +402,11 @@ static Image *ReadPDBImage(const ImageInfo *image_info,ExceptionInfo *exception)
+       (void) CloseBlob(image);
+       return(GetFirstImageInList(image));
+     }
+-  packets=bits_per_pixel*image->columns/8;
++  packets=(bits_per_pixel*image->columns+7)/8;
+   pixels=(unsigned char *) AcquireQuantumMemory(packets+256UL,image->rows*
+     sizeof(*pixels));
+   if (pixels == (unsigned char *) NULL)
+     ThrowReaderException(ResourceLimitError,"MemoryAllocationFailed");
+-
+   switch (pdb_image.version & 0x07)
+   {
+     case 0:
+@@ -528,7 +527,6 @@ static Image *ReadPDBImage(const ImageInfo *image_info,ExceptionInfo *exception)
+     default:
+       ThrowReaderException(CorruptImageError,"ImproperImageHeader");
+   }
+-
+   pixels=(unsigned char *) RelinquishMagickMemory(pixels);
+   if (EOFBlob(image) != MagickFalse)
+     ThrowFileException(exception,CorruptImageError,"UnexpectedEndOfFile",
+@@ -801,7 +799,7 @@ static MagickBooleanType WritePDBImage(const ImageInfo *image_info,Image *image)
+   if (image->columns % 16)
+     pdb_image.width=(short) (16*(image->columns/16+1));
+   pdb_image.height=(short) image->rows;
+-  packets=(bits_per_pixel*image->columns/8+4)*image->rows;
++  packets=((bits_per_pixel*image->columns+7)/8)*image->rows;
+   runlength=(unsigned char *) AcquireQuantumMemory(2UL*packets,
+     sizeof(*runlength));
+   if (runlength == (unsigned char *) NULL)
+-- 
+2.1.4
+

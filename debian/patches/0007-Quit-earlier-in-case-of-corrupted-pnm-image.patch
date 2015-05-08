@@ -1,0 +1,31 @@
+From 030c376fe4c97aea2178996e658b4c33aa9a736a Mon Sep 17 00:00:00 2001
+From: cristy <cristy@aa41f4f7-0bf4-0310-aa73-e5a19afd5a74>
+Date: Tue, 28 Oct 2014 13:11:48 +0000
+Subject: [PATCH] Quit earlier in case of corrupted pnm image
+
+Do not try to read a corrupted pnm file. Bail early.
+
+Fix a segv and thus a DOS
+
+git-svn-id: https://subversion.imagemagick.org/subversion/ImageMagick/branches/ImageMagick-6@16867 aa41f4f7-0bf4-0310-aa73-e5a19afd5a74
+origin: http://trac.imagemagick.org/changeset/16867
+---
+ coders/pnm.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/coders/pnm.c b/coders/pnm.c
+index 03f5fe5..1d6817e 100644
+--- a/coders/pnm.c
++++ b/coders/pnm.c
+@@ -411,7 +411,7 @@ static Image *ReadPNMImage(const ImageInfo *image_info,ExceptionInfo *exception)
+       }
+     if ((image->columns == 0) || (image->rows == 0))
+       ThrowReaderException(CorruptImageError,"NegativeOrZeroImageSize");
+-    if (max_value > 4294967295U)
++    if ((max_value == 0) || (max_value > 4294967295U))
+       ThrowReaderException(CorruptImageError,"ImproperImageHeader");
+     for (depth=1; GetQuantumRange(depth) < max_value; depth++) ;
+     image->depth=depth;
+-- 
+2.1.4
+

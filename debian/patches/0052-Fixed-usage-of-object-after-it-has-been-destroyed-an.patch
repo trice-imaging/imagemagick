@@ -1,0 +1,62 @@
+From 37ec7d53dcb99fbd1f5c33442594d5e279630563 Mon Sep 17 00:00:00 2001
+From: dirk <dirk@aa41f4f7-0bf4-0310-aa73-e5a19afd5a74>
+Date: Thu, 18 Dec 2014 20:37:35 +0000
+Subject: [PATCH] Fixed usage of object after it has been destroyed and removed
+ unused argument.
+
+git-svn-id: https://subversion.imagemagick.org/subversion/ImageMagick/branches/ImageMagick-6@17332 aa41f4f7-0bf4-0310-aa73-e5a19afd5a74
+origin:  http://trac.imagemagick.org/changeset/17332 and http://trac.imagemagick.org/changeset/17334
+---
+ magick/distribute-cache.c | 16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
+
+diff --git a/magick/distribute-cache.c b/magick/distribute-cache.c
+index 456d2eb..722314d 100644
+--- a/magick/distribute-cache.c
++++ b/magick/distribute-cache.c
+@@ -326,12 +326,15 @@ MagickPrivate DistributeCacheInfo *AcquireDistributeCacheInfo(
+   session_key=0;
+   server_info->file=ConnectPixelCacheServer(hostname,server_info->port,
+     &session_key,exception);
+-  server_info->session_key=session_key;
+-  (void) CopyMagickString(server_info->hostname,hostname,MaxTextExtent);
+-  hostname=DestroyString(hostname);
+   if (server_info->file == -1)
+     server_info=DestroyDistributeCacheInfo(server_info);
+-  server_info->debug=IsEventLogging();
++  else
++    {
++      server_info->session_key=session_key;
++      (void) CopyMagickString(server_info->hostname,hostname,MaxTextExtent);
++      server_info->debug=IsEventLogging();
++    }
++  hostname=DestroyString(hostname);
+   return(server_info);
+ }
+ 
+@@ -398,12 +401,11 @@ MagickPrivate DistributeCacheInfo *DestroyDistributeCacheInfo(
+ */
+ 
+ static MagickBooleanType DestroyDistributeCache(SplayTreeInfo *registry,
+-  int magick_unused(file),const size_t session_key)
++  const size_t session_key)
+ {
+   /*
+     Destroy distributed pixel cache.
+   */
+-  magick_unreferenced(file);
+   return(DeleteNodeFromSplayTree(registry,(const void *) session_key));
+ }
+ 
+@@ -829,7 +831,7 @@ static void *DistributePixelCacheClient(void *socket)
+       }
+       case 'd':
+       {
+-        status=DestroyDistributeCache(registry,client_socket,session_key);
++        status=DestroyDistributeCache(registry,session_key);
+         break;
+       }
+       default:
+-- 
+2.1.4
+

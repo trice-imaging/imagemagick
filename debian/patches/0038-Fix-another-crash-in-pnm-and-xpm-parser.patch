@@ -1,0 +1,42 @@
+From fcf54f0b0f1a277f2e480ac37d731c6a0e5eb473 Mon Sep 17 00:00:00 2001
+From: cristy <cristy@aa41f4f7-0bf4-0310-aa73-e5a19afd5a74>
+Date: Tue, 16 Dec 2014 19:43:22 +0000
+Subject: [PATCH] Fix another crash in pnm and xpm parser
+
+git-svn-id: https://subversion.imagemagick.org/subversion/ImageMagick/branches/ImageMagick-6@17297 aa41f4f7-0bf4-0310-aa73-e5a19afd5a74
+Origin:  http://trac.imagemagick.org/changeset/17297
+---
+ coders/pnm.c | 2 +-
+ coders/xpm.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/coders/pnm.c b/coders/pnm.c
+index 64da096..44e9ffe 100644
+--- a/coders/pnm.c
++++ b/coders/pnm.c
+@@ -155,8 +155,8 @@ static void PNMComment(Image *image)
+     Read comment.
+   */
+   comment=AcquireString(GetImageProperty(image,"comment"));
+-  extent=MaxTextExtent;
+   p=comment+strlen(comment);
++  extent=strlen(comment)+MaxTextExtent;
+   for (c='#'; (c != EOF) && (c != (int) '\n'); p++)
+   {
+     if ((size_t) (p-comment+1) >= extent)
+diff --git a/coders/xpm.c b/coders/xpm.c
+index 34d3511..2f43834 100644
+--- a/coders/xpm.c
++++ b/coders/xpm.c
+@@ -158,7 +158,7 @@ static size_t CopyXPMColor(char *destination,const char *source,size_t length)
+     *p;
+ 
+   p=source;
+-  while (length-- && (*p != '\0'))
++  while (--length && (*p != '\0'))
+     *destination++=(*p++);
+   *destination='\0';
+   return((size_t) (p-source));
+-- 
+2.1.4
+

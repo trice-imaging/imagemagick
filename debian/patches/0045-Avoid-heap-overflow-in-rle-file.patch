@@ -1,0 +1,27 @@
+From 90a405ba3e329e7e080addadac377dd4235671d3 Mon Sep 17 00:00:00 2001
+From: cristy <cristy@aa41f4f7-0bf4-0310-aa73-e5a19afd5a74>
+Date: Sun, 21 Dec 2014 21:04:29 +0000
+Subject: [PATCH] Avoid heap overflow in rle file
+
+git-svn-id: https://subversion.imagemagick.org/subversion/ImageMagick/branches/ImageMagick-6@17372 aa41f4f7-0bf4-0310-aa73-e5a19afd5a74
+origin:  http://trac.imagemagick.org/changeset/17372
+---
+ coders/rle.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/coders/rle.c b/coders/rle.c
+index 7341919..8d50b7e 100644
+--- a/coders/rle.c
++++ b/coders/rle.c
+@@ -268,7 +268,7 @@ static Image *ReadRLEImage(const ImageInfo *image_info,ExceptionInfo *exception)
+           Read image colormaps.
+         */
+         colormap=(unsigned char *) AcquireQuantumMemory(number_colormaps,
+-          map_length*sizeof(*colormap));
++          3*map_length*sizeof(*colormap));
+         if (colormap == (unsigned char *) NULL)
+           ThrowReaderException(ResourceLimitError,"MemoryAllocationFailed");
+         p=colormap;
+-- 
+2.1.4
+

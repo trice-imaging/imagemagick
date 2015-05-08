@@ -1,0 +1,39 @@
+From 82a5bbdd47b9b3f43ce3c2aa18741aecc4a0f962 Mon Sep 17 00:00:00 2001
+From: cristy <cristy@aa41f4f7-0bf4-0310-aa73-e5a19afd5a74>
+Date: Fri, 28 Nov 2014 17:21:53 +0000
+Subject: [PATCH] Avoid out of bound access in xwd file handling
+
+git-svn-id: https://subversion.imagemagick.org/subversion/ImageMagick/branches/ImageMagick-6@17119 aa41f4f7-0bf4-0310-aa73-e5a19afd5a74
+origin: http://trac.imagemagick.org/changeset/17119
+---
+ coders/xwd.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/coders/xwd.c b/coders/xwd.c
+index 2949a17..19e4e71 100644
+--- a/coders/xwd.c
++++ b/coders/xwd.c
+@@ -459,12 +459,16 @@ static Image *ReadXWDImage(const ImageInfo *image_info,ExceptionInfo *exception)
+             {
+               pixel=XGetPixel(ximage,(int) x,(int) y);
+               index=(IndexPacket) ((pixel >> red_shift) & red_mask);
+-              SetPixelRed(q,ScaleShortToQuantum(colors[(ssize_t) index].red));
++              if (index < header.ncolors)
++                SetPixelRed(q,ScaleShortToQuantum(colors[(ssize_t) index].red));
+               index=(IndexPacket) ((pixel >> green_shift) & green_mask);
+-              SetPixelGreen(q,ScaleShortToQuantum(colors[(ssize_t)
+-                index].green));
++              if (index < header.ncolors)
++                SetPixelGreen(q,ScaleShortToQuantum(colors[(ssize_t)
++                  index].green));
+               index=(IndexPacket) ((pixel >> blue_shift) & blue_mask);
+-              SetPixelBlue(q,ScaleShortToQuantum(colors[(ssize_t) index].blue));
++              if (index < header.ncolors)
++                SetPixelBlue(q,ScaleShortToQuantum(colors[(ssize_t)
++                  index].blue));
+               q++;
+             }
+             if (SyncAuthenticPixels(image,exception) == MagickFalse)
+-- 
+2.1.4
+

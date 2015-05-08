@@ -1,0 +1,86 @@
+From 8dcc9040757567b70792a1aeb2184d61f8a7cce2 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Bastien=20ROUCARI=C3=88S?= <roucaries.bastien@gmail.com>
+Date: Mon, 27 May 2013 15:26:49 +0200
+Subject: [PATCH] Use svg instead of png for generating class diagram
+
+Use svg instead of png in order to get better compression ratio of
+doc package.
+
+Quality is also improved.
+
+Forwarded: no
+---
+ config/Magick++.dox.in   | 4 ++--
+ config/MagickCore.dox.in | 4 ++--
+ config/MagickWand.dox.in | 4 ++--
+ 3 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/config/Magick++.dox.in b/config/Magick++.dox.in
+index c20d911..3f7afcb 100644
+--- a/config/Magick++.dox.in
++++ b/config/Magick++.dox.in
+@@ -1600,7 +1600,7 @@ HIDE_UNDOC_RELATIONS   = YES
+ # toolkit from AT&T and Lucent Bell Labs. The other options in this section
+ # have no effect if this option is set to NO (the default)
+ 
+-HAVE_DOT               = NO
++HAVE_DOT               = YES
+ 
+ # The DOT_NUM_THREADS specifies the number of dot invocations doxygen is
+ # allowed to run in parallel. When set to 0 (the default) doxygen will
+@@ -1717,7 +1717,7 @@ DIRECTORY_GRAPH        = YES
+ # HTML_FILE_EXTENSION to xhtml in order to make the SVG files
+ # visible in IE 9+ (other browsers do not have this requirement).
+ 
+-DOT_IMAGE_FORMAT       = png
++DOT_IMAGE_FORMAT       = svg
+ 
+ # If DOT_IMAGE_FORMAT is set to svg, then this option can be set to YES to
+ # enable generation of interactive SVG images that allow zooming and panning.
+diff --git a/config/MagickCore.dox.in b/config/MagickCore.dox.in
+index ac9bac1..71c9411 100644
+--- a/config/MagickCore.dox.in
++++ b/config/MagickCore.dox.in
+@@ -1600,7 +1600,7 @@ HIDE_UNDOC_RELATIONS   = YES
+ # toolkit from AT&T and Lucent Bell Labs. The other options in this section
+ # have no effect if this option is set to NO (the default)
+ 
+-HAVE_DOT               = NO
++HAVE_DOT               = YES
+ 
+ # The DOT_NUM_THREADS specifies the number of dot invocations doxygen is
+ # allowed to run in parallel. When set to 0 (the default) doxygen will
+@@ -1717,7 +1717,7 @@ DIRECTORY_GRAPH        = YES
+ # HTML_FILE_EXTENSION to xhtml in order to make the SVG files
+ # visible in IE 9+ (other browsers do not have this requirement).
+ 
+-DOT_IMAGE_FORMAT       = png
++DOT_IMAGE_FORMAT       = svg
+ 
+ # If DOT_IMAGE_FORMAT is set to svg, then this option can be set to YES to
+ # enable generation of interactive SVG images that allow zooming and panning.
+diff --git a/config/MagickWand.dox.in b/config/MagickWand.dox.in
+index 2b4bd06..6912e06 100644
+--- a/config/MagickWand.dox.in
++++ b/config/MagickWand.dox.in
+@@ -1600,7 +1600,7 @@ HIDE_UNDOC_RELATIONS   = YES
+ # toolkit from AT&T and Lucent Bell Labs. The other options in this section
+ # have no effect if this option is set to NO (the default)
+ 
+-HAVE_DOT               = NO
++HAVE_DOT               = YES
+ 
+ # The DOT_NUM_THREADS specifies the number of dot invocations doxygen is
+ # allowed to run in parallel. When set to 0 (the default) doxygen will
+@@ -1717,7 +1717,7 @@ DIRECTORY_GRAPH        = YES
+ # HTML_FILE_EXTENSION to xhtml in order to make the SVG files
+ # visible in IE 9+ (other browsers do not have this requirement).
+ 
+-DOT_IMAGE_FORMAT       = png
++DOT_IMAGE_FORMAT       = svg
+ 
+ # If DOT_IMAGE_FORMAT is set to svg, then this option can be set to YES to
+ # enable generation of interactive SVG images that allow zooming and panning.
+-- 
+2.1.4
+

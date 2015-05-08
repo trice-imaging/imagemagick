@@ -1,0 +1,62 @@
+From 75cecc4e39ad28f989700e261445adde0c88dc86 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Bastien=20ROUCARI=C3=88S?= <roucaries.bastien@gmail.com>
+Date: Mon, 29 Dec 2014 10:51:48 +0100
+Subject: [PATCH] Fix correctly the xpm crash problem
+
+The xpm crash was fixed but the xpm result was not correct (xpm file was destroyed).
+
+Fix correctly.
+
+Bug-Debian: https://bugs.debian.org/773980
+Origin: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=773980#47 and http://www.imagemagick.org/discourse-server/viewtopic.php?f=3&t=26787&p=118367#p118368
+---
+ coders/xpm.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/coders/xpm.c b/coders/xpm.c
+index 2f43834..44ed9ef 100644
+--- a/coders/xpm.c
++++ b/coders/xpm.c
+@@ -158,9 +158,10 @@ static size_t CopyXPMColor(char *destination,const char *source,size_t length)
+     *p;
+ 
+   p=source;
+-  while (--length && (*p != '\0'))
++  while (length-- && (*p != '\0'))
+     *destination++=(*p++);
+-  *destination='\0';
++  if (length != 0)
++    *destination='\0';
+   return((size_t) (p-source));
+ }
+ 
+@@ -385,7 +386,7 @@ static Image *ReadXPMImage(const ImageInfo *image_info,ExceptionInfo *exception)
+ 
+     p=next;
+     next=NextXPMLine(p);
+-    (void) CopyXPMColor(key,p,MagickMin((size_t) width,MaxTextExtent));
++    (void) CopyXPMColor(key,p,MagickMin((size_t) width,MaxTextExtent-1));
+     status=AddValueToSplayTree(xpm_colors,ConstantString(key),(void *) j);
+     /*
+       Parse color.
+@@ -400,7 +401,7 @@ static Image *ReadXPMImage(const ImageInfo *image_info,ExceptionInfo *exception)
+           break;
+         if (next != (char *) NULL)
+           (void) CopyXPMColor(target,q,MagickMin((size_t) (next-q),
+-            MaxTextExtent));
++            MaxTextExtent-1));
+         else
+           (void) CopyMagickString(target,q,MaxTextExtent);
+         q=ParseXPMColor(target,MagickFalse);
+@@ -443,7 +444,7 @@ static Image *ReadXPMImage(const ImageInfo *image_info,ExceptionInfo *exception)
+         indexes=GetAuthenticIndexQueue(image);
+         for (x=0; x < (ssize_t) image->columns; x++)
+         {
+-          p+=CopyXPMColor(key,p,MagickMin(width,MaxTextExtent));
++          p+=CopyXPMColor(key,p,MagickMin(width,MaxTextExtent-1));
+           j=(ssize_t) GetValueFromSplayTree(xpm_colors,key);
+           if (image->storage_class == PseudoClass)
+             SetPixelIndex(indexes+x,j);
+-- 
+2.1.4
+

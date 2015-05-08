@@ -1,0 +1,27 @@
+From 6ac5719fd35183c45e12bfc8decc66f2e74a315a Mon Sep 17 00:00:00 2001
+From: cristy <cristy@aa41f4f7-0bf4-0310-aa73-e5a19afd5a74>
+Date: Mon, 1 Dec 2014 11:54:26 +0000
+Subject: [PATCH] Fix compile problem due to previous patch
+
+git-svn-id: https://subversion.imagemagick.org/subversion/ImageMagick/branches/ImageMagick-6@17144 aa41f4f7-0bf4-0310-aa73-e5a19afd5a74
+origin: http://trac.imagemagick.org/changeset/17144
+---
+ coders/xpm.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/coders/xpm.c b/coders/xpm.c
+index e48eb9c..98e95ce 100644
+--- a/coders/xpm.c
++++ b/coders/xpm.c
+@@ -154,7 +154,7 @@ static int CompareXPMColor(const void *target,const void *source)
+ 
+ static size_t CopyXPMColor(char *destination,const char *source,size_t length)
+ {
+-  register char
++  register const char
+     *p;
+ 
+   p=source;
+-- 
+2.1.4
+
