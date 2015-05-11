@@ -473,7 +473,8 @@ static unsigned char *DecodeImage(Image *blob,Image *image,
     return((unsigned char *) NULL);
   *extent=row_bytes*image->rows*sizeof(*pixels);
   (void) ResetMagickMemory(pixels,0,*extent);
-  scanline=(unsigned char *) AcquireQuantumMemory(row_bytes,sizeof(*scanline));
+  scanline=(unsigned char *) AcquireQuantumMemory(row_bytes,2*
+    sizeof(*scanline));
   if (scanline == (unsigned char *) NULL)
     return((unsigned char *) NULL);
   if (bytes_per_line < 8)
@@ -1388,6 +1389,7 @@ static Image *ReadPICTImage(const ImageInfo *image_info,
           {
             if (file != (FILE *) NULL)
               (void) fclose(file);
+            (void) RelinquishUniqueFileResource(read_info->filename);
             (void) CopyMagickString(image->filename,read_info->filename,
               MaxTextExtent);
             ThrowFileException(exception,FileOpenError,
@@ -1401,6 +1403,7 @@ static Image *ReadPICTImage(const ImageInfo *image_info,
         if (ReadRectangle(image,&frame) == MagickFalse)
           {
             (void) fclose(file);
+            (void) RelinquishUniqueFileResource(read_info->filename);
             ThrowReaderException(CorruptImageError,"ImproperImageHeader");
           }
         for (i=0; i < 122; i++)

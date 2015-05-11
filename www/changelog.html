@@ -11,7 +11,7 @@
                           http://www.w3.org/MarkUp/SCHEMA/xhtml11.xsd">
 <head>
   <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
-  <meta name=viewport content="width=device-width, initial-scale=0.3333334">
+  <meta name="viewport" content="width=device-width, initial-scale=0.3333334"/>
   <meta name="google-site-verification" content="_bMOCDpkx9ZAzBwb2kF3PRHbfUUdFj2uO8Jd1AXArz4"/>
   <title>ImageMagick: Changelog</title>
   <meta http-equiv="content-language" content="en-US"/>
@@ -263,7 +263,7 @@
   <dd> Permit spaces in the gradient color specification (reference    http://www.imagemagick.org/discourse-server/viewtopic.html?f=3&amp;t=25614).</dd>
   <dd> Fix IdentifyImage() crash when image-&gt;magick member is null (reference    http://www.imagemagick.org/discourse-server/viewtopic.html?f=3&amp;t=25615).</dd>
   <dd> The -format M and Y channels are no longer reversed (reference    http://www.imagemagick.org/discourse-server/viewtopic.html?f=3&amp;t=25633).</dd>
-  <dd> Remove Makefile race condition where two targets attempt to install    magick-baseconfig.h (reference<dt>		http://git.buildroot.net/buildroot/commit/?id=7395ee9d3b88e45798143e05a28d6d4b51409130)</dt>
+  <dd> Remove Makefile race condition where two targets attempt to install    magick-baseconfig.h (reference http://git.buildroot.net/buildroot/commit/?id=7395ee9d3b88e45798143e05a28d6d4b51409130)</dd>
   <dd> Fix memory leak in BlobToStringInfo() (reference    http://www.imagemagick.org/discourse-server/viewtopic.html?f=3&amp;t=25639).</dd>
   <dd> In certain cases, -adaptive-sharpen failed to sharpen (reference    http://www.imagemagick.org/discourse-server/viewtopic.html?f=3&amp;t=23211</dd>
 <dt>2014-05-12  6.8.9-2 Dirk Lemstra &lt;dirk@snakeware...&gt;</dt>
@@ -1022,8 +1022,8 @@
 <dt>2012-09-22  6.7.9-7 Cristy  &lt;quetzlzacatenango@image...&gt;</dt>
   <dd> New version 6.7.9-7, SVN revision 9410.</dd>
 <dt>2012-09-20  6.7.9-7 Cristy  &lt;quetzlzacatenango@image...&gt;</dt>
-  <dd> jpeg:sampling-factor might be an image property or an option (reference<dt>http://www.imagemagick.org/discourse-server/viewtopic.html?f=2&amp;t=21884).</dt>
-  <dd><dt>2012-09-15  6.7.9-6 Cristy  &lt;quetzlzacatenango@image...&gt;</dt>
+  <dd> jpeg:sampling-factor might be an image property or an option (reference http://www.imagemagick.org/discourse-server/viewtopic.html?f=2&amp;t=21884).</dd>
+  <dd>2012-09-15  6.7.9-6 Cristy  &lt;quetzlzacatenango@image...&gt;</dd>
   <dd> New version 6.7.9-6, SVN revision 9375.</dd>
 <dt>2012-09-14  6.7.9-6 Cristy  &lt;quetzlzacatenango@image...&gt;</dt>
   <dd> Don't compand the YCC colorspace, its already companded.</dd>
@@ -1154,7 +1154,7 @@
 <dt>2012-07-02  6.7.8-2 Cristy  &lt;quetzlzacatenango@image...&gt;</dt>
   <dd> Set the colorspace to linear gray when reading intensity values (reference    http://www.imagemagick.org/discourse-server/viewtopic.html?f=3&amp;t=21362).</dd>
   <dd> Don't overrun pixel buffer on inverse fourier for odd image widths.</dd>
-  <dd> Change LAB encoding to permit blurring, resize, etc.    (signed A and B channel values now stored using a 50% bias)</dd>
+  <dd> Change LAB encoding to permit blurring, resize, etc.    (signed A and B channel values now stored using a 50% bias)
     Additional.. This removes a non-linear discontinuity from stored LAB space    values. As a result you can now Blur, Compose, Resize and Distort in LAB    colorspace, without problems that previously existed.</dd>
 <dt>2012-07-04  6.7.8-1 Cristy  &lt;quetzlzacatenango@image...&gt;</dt>
   <dd> New version 6.7.8-1, SVN revision 8595.</dd>
@@ -1303,7 +1303,9 @@
   <dd> Always unlock the semaphore before returning from the png codec, either    by a "return" or png_error(); changed all Magick*Exception() calls    after setjmp() to png_error() to ensure proper cleanup (reference    http://www.imagemagick.org/discourse-server/viewtopic.html?f=3&amp;t=16883).</dd>
 <dt>2012-04-10  6.7.6-6 Anthony Thyssen &lt;A.Thyssen@griffith...&gt;</dt>
   <dd> Fixed log known alpha*kernel normalization bug in morphology convolve.</dd>
-    Convolve kernel weights have been separated from alpha blend handling.    Un-normalized kernels applied to images with active alpha will no longer    be auto-normalized due to the effect of alpha blending.  The bug causes    images using the default channel setting and having an alpha channel to    automatically 'normalize' the results of a convolve during the handling    of alpha blending.  This probably would cause severe effects when a    zero-summing kernel is being used on an image containing an active (though    likely fully-opaque) alpha channel, as division by near zero weights    would cause extreme color values in results.  This bug is not normally    seen as convolution, which is normally applied only to fully-opaque    images. And using a zero-summing kernel on an image with alpha also    results in a transparent image!  This is why it was not fixed up until now.</dd>
+  <dd> Convolve kernel weights have been separated from alpha blend handling.    Un-normalized kernels applied to images with active alpha will no longer    be auto-normalized due to the effect of alpha blending.</dd>
+  <dd> The bug causes images using the default channel setting and having an    alpha channel to automatically 'normalize' the results of a convolve    during the handling of alpha blending.  This probably would cause severe    effects when a zero-summing kernel is being used on an image containing    an active (though likely fully-opaque) alpha channel, as division by near    zero weights would cause extreme color values in results.</dd>
+  <dd> This bug is not normally seen as convolution, which is normally applied only    to fully-opaque images. And using a zero-summing kernel on an image with    alpha also results in a transparent image!  This is why it was not fixed    up until now.</dd>
 <dt>2012-04-08  6.7.6-6 Cristy  &lt;quetzlzacatenango@image...&gt;</dt>
   <dd> Pixel allocation for Pango is stride*rows not stride*columns.</dd>
   <dd> Set the image resolution for Postscript files with an embedded Photoshop    profile.</dd>
@@ -2131,7 +2133,7 @@
   <dd> Switch default resize filters to using the faster SincPolynomial    filter by default internally.  However 'Sinc' will still use the    Trigonometric function, and can be used to assign the trig version    of Sinc() to filters using the filter expert options.</dd>
   <dd> The default filter for 'distort' was found to be a very blurry inaccurate    filter function.  It was removed and replaced with a correct Gaussian    filter (as used by resize)</dd>
   <dd> Added a switch so that "-interpolate filter" will force the use of    a cylindrical filter for ALL pixels in distorted images.  That is you can    use that switch to use a cylindrical filter even for images that are    being enlarged by the distortion.  However EWA is still currently using    a fixed 2.0 sampling radius.  This switch complements the use of "-filter    point" which turns off EWA filters in favor of interpolation for all    pixels in a distorted image.  BOTH switches should not be used together.</dd>
-  <dd> A bug in the support radius of the EWA resampling function was found,    now that correctly defined resize filters are being used. Suddenly Normal    Gaussian distortions are not so blurry, and tests with distortions of    the 'Rings' image show extremely good and clear results, with only minimal    blurring.  The filter 'blur' expert option can be used to adjust this    further.</dd>
+  <dd> A bug in the support radius of the EWA resampling function was found,    now that correctly defined resize filters are being used. Suddenly Normal    Gaussian distortions are not so blurry, and tests with distortions of    the 'Rings' image show extremely good and clear results, with only minimal    blurring.  The filter 'blur' expert option can be used to adjust this    further.
     The above represents a major improvement forward in the quality of the    image distortion operator. But near-unity distortions (no scaling) are    still overly blurry.</dd>
 <dt>2010-09-13  6.6.4-2 Cristy  &lt;quetzlzacatenango@image...&gt;</dt>
   <dd> Don't negate the geometry offset for the -extent option.</dd>
@@ -2529,8 +2531,9 @@
 <dt>2009-10-10  6.5.7-0 Anthony Thyssen &lt;A.Thyssen@griffith...&gt;</dt>
   <dd> Bug Fixes for degenerate 'affine' cases of BilinearForward distortion.</dd>
 <dt>2009-10-06  6.5.6-10 Cristy  &lt;quetzlzacatenango@image...&gt;</dt>
-  <dd> Declare the  MagickCore method SpliceImage() in Magick++/Include.h.</dd>
-    QueueCacheViewAuthenticPixels() for the CopyComposite optimization.<dt>2009-10-04  6.5.6-9 Cristy  &lt;quetzlzacatenango@image...&gt;</dt>
+  <dd> Declare the  MagickCore method SpliceImage() in Magick++/Include.h.
+    QueueCacheViewAuthenticPixels() for the CopyComposite optimization.</dd>
+<dt>2009-10-04  6.5.6-9 Cristy  &lt;quetzlzacatenango@image...&gt;</dt>
   <dd> Use GetCacheViewAuthenticPixels() rather than</dd>
   <dd> QueueCacheViewAuthenticPixels() for the CopyComposite optimization.</dd>
 <dt>2009-10-03  6.5.6-8 Nick Wellnhofer &lt;wellnhofer@aevum...&gt;</dt>
@@ -3651,3 +3654,4 @@
 </body>
 </html>
 <!-- Magick Cache 25th July 2014 04:05 -->
+

@@ -2182,6 +2182,11 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
   png_set_benign_errors(ping, 1);
 #endif
 
+#ifdef PNG_SET_USER_LIMITS_SUPPORTED
+  /* Reject images with more than 10 million rows or columns */
+  png_set_user_limits(ping, 10000000L, 10000000L);
+#endif /* PNG_SET_USER_LIMITS_SUPPORTED */
+
   /*
     Prepare PNG for reading.
   */
@@ -3097,6 +3102,16 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
 
   if (image->storage_class == DirectClass)
     {
+      QuantumInfo
+        *quantum_info;
+
+      quantum_info=AcquireQuantumInfo(image_info,image);
+
+      if (quantum_info == (QuantumInfo *) NULL)
+        png_error(ping,"Failed to allocate quantum_info");
+
+      (void) SetQuantumEndian(image,quantum_info,MSBEndian);
+
       for (pass=0; pass < num_passes; pass++)
       {
         /*
@@ -3128,16 +3143,6 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
 
           else
           {
-            QuantumInfo
-              *quantum_info;
-
-            quantum_info=AcquireQuantumInfo(image_info,image);
-
-            if (quantum_info == (QuantumInfo *) NULL)
-              png_error(ping,"Failed to allocate quantum_info");
-
-            (void) SetQuantumEndian(image,quantum_info,MSBEndian);
-
             if ((int) ping_color_type == PNG_COLOR_TYPE_GRAY)
               (void) ImportQuantumPixels(image,(CacheView *) NULL,quantum_info,
                 GrayQuantum,ping_pixels+row_offset,exception);
@@ -3158,7 +3163,6 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
               (void) ImportQuantumPixels(image,(CacheView *) NULL,quantum_info,
                 RGBQuantum,ping_pixels+row_offset,exception);
 
-            quantum_info=DestroyQuantumInfo(quantum_info);
           }
 
           if (found_transparent_pixel == MagickFalse)
@@ -3219,6 +3223,7 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
               break;
           }
       }
+      quantum_info=DestroyQuantumInfo(quantum_info);
     }
 
   else /* image->storage_class != DirectClass */
@@ -4170,7 +4175,7 @@ static Image *ReadOneJNGImage(MngInfo *mng_info,
         type[0],type[1],type[2],type[3],(double) length);
 
     if (length > PNG_UINT_31_MAX || count == 0)
-      ThrowReaderException(CorruptImageError,"CorruptImage");
+        ThrowReaderException(CorruptImageError,"CorruptImage");
 
     p=NULL;
     chunk=(unsigned char *) NULL;
@@ -4730,8 +4735,7 @@ static Image *ReadOneJNGImage(MngInfo *mng_info,
 static Image *ReadJNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
 {
   Image
-    *image,
-    *previous;
+    *image;
 
   MagickBooleanType
     have_mng_structure,
@@ -4787,18 +4791,11 @@ static Image *ReadJNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
   have_mng_structure=MagickTrue;
 
   mng_info->image=image;
-  previous=image;
   image=ReadOneJNGImage(mng_info,image_info,exception);
   MngInfoFreeStruct(mng_info,&have_mng_structure);
 
   if (image == (Image *) NULL)
     {
-      if (IsImageObject(previous) != MagickFalse)
-        {
-          (void) CloseBlob(previous);
-          (void) DestroyImageList(previous);
-        }
-
       if (logging != MagickFalse)
         (void) LogMagickEvent(CoderEvent,GetMagickModule(),
           "exit ReadJNGImage() with error");

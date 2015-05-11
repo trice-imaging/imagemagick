@@ -152,17 +152,22 @@ static int CompareXPMColor(const void *target,const void *source)
   return(strcmp(p,q));
 }
 
-static char *CopyXPMColor(char *destination,const char *source,size_t length)
+static size_t CopyXPMColor(char *destination,const char *source,size_t length)
 {
-  while (length-- && (*source != '\0'))
-    *destination++=(*source++);
-  *destination='\0';
-  return(destination-length);
+  register const char
+    *p;
+
+  p=source;
+  while (length-- && (*p != '\0'))
+    *destination++=(*p++);
+  if (length != 0)
+    *destination='\0';
+  return((size_t) (p-source));
 }
 
 static char *NextXPMLine(char *p)
 {
-  assert(p != (char*)NULL);
+  assert(p != (char *) NULL);
   p=strchr(p,'\n');
   if (p != (char *) NULL)
     p++;
@@ -219,24 +224,21 @@ static char *ParseXPMColor(char *color,MagickBooleanType search_start)
       }
       return((char *) NULL);
     }
-  else
+  for (p=color+1; *p != '\0'; p++)
+  {
+    if (*p == '\n')
+      break;
+    if (isspace((int) ((unsigned char) (*(p-1)))) == 0)
+      continue;
+    if (isspace((int) ((unsigned char) (*p))) != 0)
+      continue;
+    for (i=0; i < NumberTargets; i++)
     {
-      for (p=color+1; *p != '\0'; p++)
-      {
-        if (*p == '\n')
-          break;
-        if (isspace((int) ((unsigned char) (*(p-1)))) == 0)
-          continue;
-        if (isspace((int) ((unsigned char) (*p))) != 0)
-          continue;
-        for (i=0; i < NumberTargets; i++)
-        {
-          if (*p == *targets[i] && *(p+1) == *(targets[i]+1))
-            return(p);
-        }
-      }
-      return(p);
+      if ((*p == *targets[i]) && (*(p+1) == *(targets[i]+1)))
+        return(p);
     }
+  }
+  return(p);
 }
 
 static Image *ReadXPMImage(const ImageInfo *image_info,ExceptionInfo *exception)
@@ -307,24 +309,26 @@ static Image *ReadXPMImage(const ImageInfo *image_info,ExceptionInfo *exception)
   */
   length=MaxTextExtent;
   xpm_buffer=(char *) AcquireQuantumMemory((size_t) length,sizeof(*xpm_buffer));
+  if (xpm_buffer == (char *) NULL)
+    ThrowReaderException(ResourceLimitError,"MemoryAllocationFailed");
+  *xpm_buffer='\0';
   p=xpm_buffer;
-  if (xpm_buffer != (char *) NULL)
-    while (ReadBlobString(image,p) != (char *) NULL)
-    {
-      if ((*p == '#') && ((p == xpm_buffer) || (*(p-1) == '\n')))
-        continue;
-      if ((*p == '}') && (*(p+1) == ';'))
-        break;
-      p+=strlen(p);
-      if ((size_t) (p-xpm_buffer+MaxTextExtent) < length)
-        continue;
-      length<<=1;
-      xpm_buffer=(char *) ResizeQuantumMemory(xpm_buffer,length+MaxTextExtent,
-        sizeof(*xpm_buffer));
-      if (xpm_buffer == (char *) NULL)
-        break;
-      p=xpm_buffer+strlen(xpm_buffer);
-    }
+  while (ReadBlobString(image,p) != (char *) NULL)
+  {
+    if ((*p == '#') && ((p == xpm_buffer) || (*(p-1) == '\n')))
+      continue;
+    if ((*p == '}') && (*(p+1) == ';'))
+      break;
+    p+=strlen(p);
+    if ((size_t) (p-xpm_buffer+MaxTextExtent) < length)
+      continue;
+    length<<=1;
+    xpm_buffer=(char *) ResizeQuantumMemory(xpm_buffer,length+MaxTextExtent,
+      sizeof(*xpm_buffer));
+    if (xpm_buffer == (char *) NULL)
+      break;
+    p=xpm_buffer+strlen(xpm_buffer);
+  }
   if (xpm_buffer == (char *) NULL)
     ThrowReaderException(ResourceLimitError,"MemoryAllocationFailed");
   /*
@@ -375,14 +379,14 @@ static Image *ReadXPMImage(const ImageInfo *image_info,ExceptionInfo *exception)
   */
   image->depth=1;
   next=NextXPMLine(xpm_buffer);
-  for (j=0; (j < (ssize_t) image->colors) && (next != (char*) NULL); j++)
+  for (j=0; (j < (ssize_t) image->colors) && (next != (char *) NULL); j++)
   {
     MagickPixelPacket
       pixel;
 
     p=next;
     next=NextXPMLine(p);
-    (void) CopyXPMColor(key,p,MagickMin((size_t) width,MaxTextExtent));
+    (void) CopyXPMColor(key,p,MagickMin((size_t) width,MaxTextExtent-1));
     status=AddValueToSplayTree(xpm_colors,ConstantString(key),(void *) j);
     /*
       Parse color.
@@ -393,9 +397,11 @@ static Image *ReadXPMImage(const ImageInfo *image_info,ExceptionInfo *exception)
       {
         while ((isspace((int) ((unsigned char) *q)) == 0) && (*q != '\0'))
           q++;
+        if ((next-q) < 0)
+          break;
         if (next != (char *) NULL)
           (void) CopyXPMColor(target,q,MagickMin((size_t) (next-q),
-            MaxTextExtent));
+            MaxTextExtent-1));
         else
           (void) CopyMagickString(target,q,MaxTextExtent);
         q=ParseXPMColor(target,MagickFalse);
@@ -438,13 +444,12 @@ static Image *ReadXPMImage(const ImageInfo *image_info,ExceptionInfo *exception)
         indexes=GetAuthenticIndexQueue(image);
         for (x=0; x < (ssize_t) image->columns; x++)
         {
-          (void) CopyXPMColor(key,p,(size_t) width);
+          p+=CopyXPMColor(key,p,MagickMin(width,MaxTextExtent-1));
           j=(ssize_t) GetValueFromSplayTree(xpm_colors,key);
           if (image->storage_class == PseudoClass)
             SetPixelIndex(indexes+x,j);
           *r=image->colormap[j];
           r++;
-          p+=width;
         }
         if (SyncAuthenticPixels(image,exception) == MagickFalse)
           break;

@@ -474,7 +474,7 @@ static int UnpackWPGRaster(Image *image,int bpp)
 
   ldblk=(ssize_t) ((bpp*image->columns+7)/8);
   BImgBuff=(unsigned char *) AcquireQuantumMemory((size_t) ldblk,
-    sizeof(*BImgBuff));
+    8*sizeof(*BImgBuff));
   if(BImgBuff==NULL) return(-2);
 
   while(y<(ssize_t) image->rows)
@@ -877,7 +877,7 @@ static Image *ReadWPGImage(const ImageInfo *image_info,
   typedef struct
   {
     unsigned int Width;
-    unsigned int Heigth;
+    unsigned int Height;
     unsigned int Depth;
     unsigned int HorzRes;
     unsigned int VertRes;
@@ -886,7 +886,7 @@ static Image *ReadWPGImage(const ImageInfo *image_info,
   typedef struct
   {
     unsigned int Width;
-    unsigned int Heigth;
+    unsigned int Height;
     unsigned char Depth;
     unsigned char Compression;
   } WPG2BitmapType1;
@@ -899,7 +899,7 @@ static Image *ReadWPGImage(const ImageInfo *image_info,
     unsigned int UpRightX;
     unsigned int UpRightY;
     unsigned int Width;
-    unsigned int Heigth;
+    unsigned int Height;
     unsigned int Depth;
     unsigned int HorzRes;
     unsigned int VertRes;
@@ -920,8 +920,7 @@ static Image *ReadWPGImage(const ImageInfo *image_info,
   */
 
   Image
-    *image,
-    *rotated_image;
+    *image;
 
   unsigned int
     status;
@@ -1026,7 +1025,9 @@ static Image *ReadWPGImage(const ImageInfo *image_info,
             {
             case 0x0B: /* bitmap type 1 */
               BitmapHeader1.Width=ReadBlobLSBShort(image);
-              BitmapHeader1.Heigth=ReadBlobLSBShort(image);
+              BitmapHeader1.Height=ReadBlobLSBShort(image);
+              if ((BitmapHeader1.Width == 0) || (BitmapHeader1.Height == 0))
+                ThrowReaderException(CorruptImageError,"ImproperImageHeader");
               BitmapHeader1.Depth=ReadBlobLSBShort(image);
               BitmapHeader1.HorzRes=ReadBlobLSBShort(image);
               BitmapHeader1.VertRes=ReadBlobLSBShort(image);
@@ -1038,7 +1039,7 @@ static Image *ReadWPGImage(const ImageInfo *image_info,
                   image->y_resolution=BitmapHeader1.VertRes/470.0;
                 }
               image->columns=BitmapHeader1.Width;
-              image->rows=BitmapHeader1.Heigth;
+              image->rows=BitmapHeader1.Height;
               bpp=BitmapHeader1.Depth;
 
               goto UnpackRaster;
@@ -1076,7 +1077,9 @@ static Image *ReadWPGImage(const ImageInfo *image_info,
               BitmapHeader2.UpRightX=ReadBlobLSBShort(image);
               BitmapHeader2.UpRightY=ReadBlobLSBShort(image);
               BitmapHeader2.Width=ReadBlobLSBShort(image);
-              BitmapHeader2.Heigth=ReadBlobLSBShort(image);
+              BitmapHeader2.Height=ReadBlobLSBShort(image);
+              if ((BitmapHeader2.Width == 0) || (BitmapHeader2.Height == 0))
+                ThrowReaderException(CorruptImageError,"ImproperImageHeader");
               BitmapHeader2.Depth=ReadBlobLSBShort(image);
               BitmapHeader2.HorzRes=ReadBlobLSBShort(image);
               BitmapHeader2.VertRes=ReadBlobLSBShort(image);
@@ -1094,7 +1097,7 @@ static Image *ReadWPGImage(const ImageInfo *image_info,
                   image->y_resolution=BitmapHeader2.VertRes/470.0;
                 }
               image->columns=BitmapHeader2.Width;
-              image->rows=BitmapHeader2.Heigth;
+              image->rows=BitmapHeader2.Height;
               bpp=BitmapHeader2.Depth;
 
             UnpackRaster:
@@ -1151,30 +1154,43 @@ static Image *ReadWPGImage(const ImageInfo *image_info,
                   /* flop command */
                   if(BitmapHeader2.RotAngle & 0x8000)
                     {
-                      rotated_image = FlopImage(image, exception);
-                      rotated_image->blob = image->blob;
-                      DuplicateBlob(rotated_image,image);
-                      (void) RemoveLastImageFromList(&image);
-                      AppendImageToList(&image,rotated_image);
+                      Image
+                        *flop_image;
+
+                      flop_image = FlopImage(image, exception);
+                      if (flop_image != (Image *) NULL) {
+                        DuplicateBlob(flop_image,image);
+                        (void) RemoveLastImageFromList(&image);
+                        AppendImageToList(&image,flop_image);
+                      }
                     }
                   /* flip command */
                   if(BitmapHeader2.RotAngle & 0x2000)
                     {
-                      rotated_image = FlipImage(image, exception);
-                      rotated_image->blob = image->blob;
-                      DuplicateBlob(rotated_image,image);
-                      (void) RemoveLastImageFromList(&image);
-                      AppendImageToList(&image,rotated_image);
+                      Image
+                        *flip_image;
+
+                      flip_image = FlipImage(image, exception);
+                      if (flip_image != (Image *) NULL) {
+                        DuplicateBlob(flip_image,image);
+                        (void) RemoveLastImageFromList(&image);
+                        AppendImageToList(&image,flip_image);
+                      }
                     }
 
       /* rotate command */
                   if(BitmapHeader2.RotAngle & 0x0FFF)
                     {
-                      rotated_image = RotateImage(image, (BitmapHeader2.RotAngle & 0x0FFF), exception);
-                      rotated_image->blob = image->blob;
-                      DuplicateBlob(rotated_image,image);
-                      (void) RemoveLastImageFromList(&image);
-                      AppendImageToList(&image,rotated_image);
+                      Image
+                        *rotate_image;
+
+                      rotate_image=RotateImage(image,(BitmapHeader2.RotAngle &
+                        0x0FFF), exception);
+                      if (rotate_image != (Image *) NULL) {
+                        DuplicateBlob(rotate_image,image);
+                        (void) RemoveLastImageFromList(&image);
+                        AppendImageToList(&image,rotate_image);
+                      }
                     }
                 }
 
@@ -1249,7 +1265,9 @@ static Image *ReadWPGImage(const ImageInfo *image_info,
               break;
             case 0x0E:
               Bitmap2Header1.Width=ReadBlobLSBShort(image);
-              Bitmap2Header1.Heigth=ReadBlobLSBShort(image);
+              Bitmap2Header1.Height=ReadBlobLSBShort(image);
+              if ((Bitmap2Header1.Width == 0) || (Bitmap2Header1.Height == 0))
+                ThrowReaderException(CorruptImageError,"ImproperImageHeader");
               Bitmap2Header1.Depth=ReadBlobByte(image);
               Bitmap2Header1.Compression=ReadBlobByte(image);
 
@@ -1276,7 +1294,7 @@ static Image *ReadWPGImage(const ImageInfo *image_info,
                   continue;  /*Ignore raster with unknown depth*/
                 }
               image->columns=Bitmap2Header1.Width;
-              image->rows=Bitmap2Header1.Heigth;
+              image->rows=Bitmap2Header1.Height;
 
               if ((image->colors == 0) && (bpp != 24))
                 {
@@ -1327,12 +1345,16 @@ static Image *ReadWPGImage(const ImageInfo *image_info,
                 }
 
               if(CTM[0][0]<0 && !image_info->ping)
-    {    /*?? RotAngle=360-RotAngle;*/
-      rotated_image = FlopImage(image, exception);
-      rotated_image->blob = image->blob;
-      DuplicateBlob(rotated_image,image);
-      (void) RemoveLastImageFromList(&image);
-      AppendImageToList(&image,rotated_image);
+                {    /*?? RotAngle=360-RotAngle;*/
+                  Image
+                    *flop_image;
+
+                  flop_image = FlopImage(image, exception);
+                  if (flop_image != (Image *) NULL) {
+                    DuplicateBlob(flop_image,image);
+                    (void) RemoveLastImageFromList(&image);
+                    AppendImageToList(&image,flop_image);
+                  }
                   /* Try to change CTM according to Flip - I am not sure, must be checked.
                      Tx(0,0)=-1;      Tx(1,0)=0;   Tx(2,0)=0;
                      Tx(0,1)= 0;      Tx(1,1)=1;   Tx(2,1)=0;
@@ -1340,19 +1362,23 @@ static Image *ReadWPGImage(const ImageInfo *image_info,
                      Tx(1,2)=0;   Tx(2,2)=1; */
                 }
               if(CTM[1][1]<0 && !image_info->ping)
-    {    /*?? RotAngle=360-RotAngle;*/
-      rotated_image = FlipImage(image, exception);
-      rotated_image->blob = image->blob;
-      DuplicateBlob(rotated_image,image);
-      (void) RemoveLastImageFromList(&image);
-      AppendImageToList(&image,rotated_image);
+                {    /*?? RotAngle=360-RotAngle;*/
+                  Image
+                    *flip_image;
+
+                  flip_image = FlipImage(image, exception);
+                  if (flip_image != (Image *) NULL) {
+                    DuplicateBlob(flip_image,image);
+                    (void) RemoveLastImageFromList(&image);
+                    AppendImageToList(&image,flip_image);
+                  }
                   /* Try to change CTM according to Flip - I am not sure, must be checked.
                      float_matrix Tx(3,3);
                      Tx(0,0)= 1;   Tx(1,0)= 0;   Tx(2,0)=0;
                      Tx(0,1)= 0;   Tx(1,1)=-1;   Tx(2,1)=0;
                      Tx(0,2)= 0;   Tx(1,2)=(WPG._2Rect.Y_ur+WPG._2Rect.Y_ll);
                      Tx(2,2)=1; */
-    }
+                }
 
 
               /* Allocate next image structure. */
